@@ -13,15 +13,16 @@ from io import StringIO
 from kontur_api import KonturApi
 
 TYPEOPERATION = ''
+API = KonturApi()
 
 
-def get_token(api):
+def get_token():
     """
     Получим токен и по нему дальше будем проходить авторизацию
     Метод веб-сервиса Authenticate
     """
     try:
-        result = api.run_requests('/V1/Authenticate', 'post')
+        result = API.run_requests('/V1/Authenticate', 'post')
     except:
         show_message('Не удалось получить токен!')
         raise SystemExit
@@ -29,18 +30,18 @@ def get_token(api):
     return result.text
 
 
-def get_boxes(api):
+def get_boxes():
     """Получим id транспортного ящика
         Метод веб-сервиса GetBoxesInfo"""
     try:
-        result = api.run_requests('/V1/Boxes/GetBoxesInfo', 'get')
+        result = API.run_requests('/V1/Boxes/GetBoxesInfo', 'get')
         io = StringIO(result.text)
         data = json.load(io)
 
         main_boxes = []
 
         for box in data['Boxes']:
-            if box['BoxSettings']['IsMain']:
+            if not box['BoxSettings']['IsMain']:
                 main_boxes.append(box)
         io.close()
     except:
@@ -50,7 +51,7 @@ def get_boxes(api):
     return main_boxes
 
 
-def get_events(api, id_box):
+def get_events(id_box):
     pass
 
 
@@ -67,23 +68,23 @@ def exchange():
     Основной метод. Здесь реализована вся логика скрипта
     Получает настройки для аутентификации, получает осн. транспортные ящики, выполняет обмен сообщениями
     """
-    cfg = init_config()
-    if not cfg["URL"] or not cfg['LOGIN'] or not cfg['PASSW'] or not cfg['KEY']:
+
+    init_config()
+    if not API.url or not API.login or not API.password or not API.api_key:
         print('Не найдены стандартные настройки!')
-        return None
-    # Инициализация класса KonturApi
-    kontur_api = KonturApi(cfg["URL"], cfg['LOGIN'], cfg['PASSW'], cfg['KEY'])
+        raise SystemExit
+
     # Получение токена для упрощенной схемы аутентификации при HTTP запросе
-    kontur_api.token = get_token(kontur_api)
+    API.token = get_token()
     # Получение активных транспортных ящиков, в которых хранятся наши сообщения
-    boxes = get_boxes(kontur_api)
+    boxes = get_boxes()
 
     # Получим сообщения с наших ящиков
     for box in boxes:
-        get_events(kontur_api, box['id']) if TYPEOPERATION == '-i' else send_mail()
+        get_events(box['Id']) if TYPEOPERATION == '-i' else send_mail()
+
 
 def init_config():
-    cfg = {}
     config = configparser.ConfigParser()
     try:
         config.read('api_config.ini')
@@ -91,13 +92,11 @@ def init_config():
         print("ERROR: %s" % e)
         return False
     else:
-        cfg = {'URL': config['DEFAULT']['url'],
-               'LOGIN': config['DEFAULT']['login'],
-               'PASSW': config['DEFAULT']['password'],
-               'KEY': config['DEFAULT']['api_key'],
-               }
+        API.url = config['DEFAULT']['url']
+        API.login = config['DEFAULT']['login']
+        API.password = config['DEFAULT']['password']
+        API.api_key = config['DEFAULT']['api_key']
 
-        return cfg
 
 # ++ Для отладки через IDE
 argv = ['main.py']

@@ -5,12 +5,12 @@ class KonturApi():
     """
     Взаимодействует с веб-сервисом контура по средствам HTTP запросов. Для связи используется библиотека request
     """
-    def __init__(self, url, login, password, key):
-        self.url = url
+    def __init__(self):
+        self.url = ''
         self.id_box = ''
-        self.login = login
-        self.password = password
-        self.api_key = key
+        self.login = ''
+        self.password = ''
+        self.api_key = ''
         self.token = ''
 
     def get_headers(self):
