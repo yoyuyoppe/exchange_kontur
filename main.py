@@ -12,6 +12,8 @@ import json
 from io import StringIO
 from kontur_api import KonturApi
 
+TYPEOPERATION = ''
+
 
 def get_token(api):
     """
@@ -34,18 +36,26 @@ def get_boxes(api):
         result = api.run_requests('/V1/Boxes/GetBoxesInfo', 'get')
         io = StringIO(result.text)
         data = json.load(io)
+
+        main_boxes = []
+
         for box in data['Boxes']:
             if box['BoxSettings']['IsMain']:
-                print(box)
-            else:
-                # Здесь надо удалить вложенный справочник из родительского
-                data['Boxes'].remove(box)
+                main_boxes.append(box)
         io.close()
     except:
         show_message('Не удалось получить список организаций')
         raise SystemExit
 
-    return data['Boxes']
+    return main_boxes
+
+
+def get_events(api, id_box):
+    pass
+
+
+def send_mail():
+    pass
 
 
 def show_message(message):
@@ -53,7 +63,7 @@ def show_message(message):
 
 
 def exchange():
-    """"
+    """
     Основной метод. Здесь реализована вся логика скрипта
     Получает настройки для аутентификации, получает осн. транспортные ящики, выполняет обмен сообщениями
     """
@@ -68,6 +78,9 @@ def exchange():
     # Получение активных транспортных ящиков, в которых хранятся наши сообщения
     boxes = get_boxes(kontur_api)
 
+    # Получим сообщения с наших ящиков
+    for box in boxes:
+        get_events(kontur_api, box['id']) if TYPEOPERATION == '-i' else send_mail()
 
 def init_config():
     cfg = {}
@@ -86,11 +99,26 @@ def init_config():
 
         return cfg
 
+# ++ Для отладки через IDE
+argv = ['main.py']
+print('Введите параметры запуска, при окончании ввода нажмите "q"')
+while True:
 
-#argv = sys.argv
+    _value = str(input("Введите параметр: "))
+    if _value.lower() == 'q':
+        break
 
-#if len(argv) == 1:
-    #raise SystemExit  # пробросим исключение о завершении работы скрипта
+    argv.append(_value)
+# --
+
+# argv = sys.argv
+
+if len(argv) == 1:
+    raise SystemExit  # пробросим исключение о завершении работы скрипта
+else:
+    TYPEOPERATION = argv[1]
+    if TYPEOPERATION != '-i' and TYPEOPERATION != '-e':
+        raise SystemExit
 
 exchange()
 
