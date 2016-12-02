@@ -55,7 +55,7 @@ def get_events(id_box):
     pass
 
 
-def send_mail():
+def send_mail(id_box):
     pass
 
 
@@ -81,7 +81,9 @@ def exchange():
 
     # Получим сообщения с наших ящиков
     for box in boxes:
-        get_events(box['Id']) if TYPEOPERATION == '-i' else send_mail()
+        # Ограничимся пока одной из тестовых организаций
+        if boxes.index(box['Id']) == 0:
+            get_events(box['Id']) if TYPEOPERATION == '-i' else send_mail(box['Id'])
 
 
 def init_config():
